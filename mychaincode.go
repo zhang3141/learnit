@@ -22,6 +22,35 @@ type Asset struct {
   Owner          string `json:"Owner"`
   Size           int    `json:"Size"`
 }
+type TreeNode struct{
+  identity       string `json:"identity"`
+  attrTree       string `json:"attrTree"`
+}
+// InitLedger adds a base set of TreeNode to the ledger
+func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
+  attrtree := []TreeNode{
+    {ID: "AM1", identity: "AM1", attrTree:  "root,R1,R2,null,null,R3,R4"},
+    {ID: "AM2", identity: "AM2", attrTree: "root"},
+    {ID: "AM3", identity: "AM3", attrTree: "root"},
+    {ID: "AM4", identity: "AM4", attrTree: "root"},
+    {ID: "AM5", identity: "AM5", attrTree: "root"},
+    {ID: "AM6", identity: "AM6", attrTree: "root"},
+  }
+
+  for _, attrtree := range attrtree {
+    attrtreeJSON, err := json.Marshal(attrtree)
+    if err != nil {
+        return err
+    }
+
+    err = ctx.GetStub().PutState(asset.ID, assetJSON)
+    if err != nil {
+        return fmt.Errorf("failed to put to world state. %v", err)
+    }
+  }
+
+  return nil
+}
 
 // InitLedger adds a base set of assets to the ledger
 func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
@@ -371,6 +400,35 @@ func (s *SmartContract) GetAllAssets(ctx contractapi.TransactionContextInterface
   }
 
   return assets, nil
+}
+
+//getthetree
+
+func (s *SmartContract) GetAllTreeNode(ctx contractapi.TransactionContextInterface) ([]*TreeNode, error) {
+  // range query with empty string for startKey and endKey does an
+  // open-ended query of all attrtree in the chaincode namespace.
+  resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
+  if err != nil {
+    return nil, err
+  }
+  defer resultsIterator.Close()
+  
+  var assets []*Asset
+  for resultsIterator.HasNext() {
+    queryResponse, err := resultsIterator.Next()
+    if err != nil {
+      return nil, err
+    }
+    var attrtree TreeNode
+    err = json.Unmarshal(queryResponse.Value, &attrtree)
+    if err != nil {
+      return nil, err
+    }
+    attrtree = append(attrtree, &attrtree)
+  } 
+
+
+  return attrtree, nil
 }
 
 func main() {
